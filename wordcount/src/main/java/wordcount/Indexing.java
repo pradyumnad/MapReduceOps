@@ -2,20 +2,14 @@ package wordcount;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.FloatWritable;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -26,8 +20,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class Indexing {
 
-	private static String SEARCH_KEY = "word";
-
 	public static class TokenizerMapper extends
 			Mapper<Object, Text, Text, FloatWritable> {
 
@@ -37,12 +29,15 @@ public class Indexing {
 
 		private List<String> wordIndexes = new ArrayList<String>();
 
+		private Set<String> noOfDocs = new HashSet<String>();
+
 		@Override
 		protected void setup(
 				Mapper<Object, Text, Text, FloatWritable>.Context context)
 				throws IOException, InterruptedException {
 			fileName = ((FileSplit) context.getInputSplit()).getPath()
 					.toString();
+			noOfDocs.add(fileName);
 		}
 
 		public void map(Object key, Text value, Context context)
@@ -64,6 +59,9 @@ public class Indexing {
 				context.write(new Text(entry), new FloatWritable(
 						(float) (1.0 / words)));
 			}
+
+			context.write(new Text("NoOfDocs"),
+					new FloatWritable(noOfDocs.size()));
 		}
 	}
 
@@ -102,6 +100,6 @@ public class Indexing {
 		FileInputFormat.addInputPath(job, new Path(args[0]));
 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
-		System.exit(job.waitForCompletion(true) ? 0 : 1);
+		System.exit(job.waitForCompletion(true) ? 0 : 1);		
 	}
 }
